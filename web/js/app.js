@@ -250,6 +250,29 @@ function startAttack(config) {
             document.getElementById('stat-hits').innerText = validHits;
         }
 
+        // --- Global Progress Bar Parsing Logic ---
+        // Rich progress bar often outputs formatted strings like: 
+        // 120/1000 or [300/5000] or ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100/100
+        const progressMatch = text.match(/(\d+)\/(\d+)/);
+        if (progressMatch) {
+            const current = parseInt(progressMatch[1], 10);
+            const total = parseInt(progressMatch[2], 10);
+
+            if (total > 0 && current <= total) {
+                document.getElementById('progress-section').style.display = 'flex';
+                const percentage = Math.floor((current / total) * 100);
+
+                document.getElementById('progress-bar-fill').style.width = `${percentage}%`;
+                document.getElementById('progress-text').innerText = `Progress: ${percentage}% (${current}/${total})`;
+
+                // Parse ETA if available from Rich (e.g., ETA: 0:01:23)
+                const etaMatch = text.match(/ETA:\s*([0-9:]+)/i);
+                if (etaMatch) {
+                    document.getElementById('progress-eta').innerText = `ETA: ${etaMatch[1]}`;
+                }
+            }
+        }
+
         // Rough heuristic for attempt counting: carriage returns or newlines
         const lines = text.split(/\r|\n/);
         if (lines.length > 1) {
@@ -262,6 +285,7 @@ function startAttack(config) {
         setStatus('System Ready', false);
         ws = null;
         document.getElementById('stat-speed').innerText = '0 /s';
+        document.getElementById('progress-eta').innerText = 'Finished';
     };
 
     ws.onerror = () => {
