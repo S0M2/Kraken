@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KRAKEN Command Center</title>
+    <link href="/static/css/style.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/xterm.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/xterm.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo-container">
+            <h1 class="logo">KRAKEN</h1>
+            <p class="subtitle">Modular Brute-Force Framework</p>
+        </div>
+        <ul class="menu" id="module-menu">
+            <li class="active" data-module="ssh">
+                <span class="icon">💻</span>
+                SSH Brute Force
+            </li>
+            <li data-module="ftp">
+                <span class="icon">📂</span>
+                FTP Brute Force
+            </li>
+            <li data-module="wordpress">
+                <span class="icon">🌐</span>
+                WordPress Brute
+            </li>
+        </ul>
+        <div class="sidebar-footer">
+            <p>v2.0 (MODULAR) <br> Coded by Jason13 & Simon</p>
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <div class="top-nav">
+            <h2 id="module-title">SSH Brute Force</h2>
+            <div class="status-indicator">
+                <span class="pulse"></span>
+                <span id="system-status">System Ready</span>
+            </div>
+        </div>
+        
+        <div class="dashboard">
+            <div class="glass-panel config-panel">
+                <h3>Attack Configuration</h3>
+                <form id="attack-form">
+                    <div class="form-group">
+                        <label>Target IP / Hostname <span>*</span></label>
+                        <input type="text" id="target" name="target" placeholder="192.168.1.1 or example.com" required autocomplete="off">
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Port</label>
+                            <input type="number" id="port" name="port" placeholder="22">
+                        </div>
+                        <div class="form-group">
+                            <label>Threads</label>
+                            <input type="number" id="threads" name="threads" value="40" min="1" max="100">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Username List (or Single Username)</label>
+                        <input type="text" id="users" name="users" placeholder="../wordlists/users.txt">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Password List <span>*</span></label>
+                        <input type="text" id="passwords" name="passwords" placeholder="../wordlists/passwords.txt" required>
+                    </div>
+
+                    <div class="action-bar">
+                        <button type="submit" class="btn-glow launch-btn" id="start-btn">
+                            <span class="btn-text">LAUNCH ATTACK</span>
+                            <span class="btn-icon">⚡</span>
+                        </button>
+                        <button type="button" class="btn-glow stop-btn" id="stop-btn" style="display: none;">
+                            <span class="btn-text">ABORT ATTACK</span>
+                            <span class="btn-icon">🛑</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="glass-panel terminal-panel">
+                <div class="terminal-ribbon">
+                    <div class="window-controls">
+                        <span class="dot close"></span>
+                        <span class="dot minimize"></span>
+                        <span class="dot expand"></span>
+                    </div>
+                    <div class="terminal-title">kraken-live-feed ~ <span>/bin/bash</span></div>
+                </div>
+                <div id="terminal-container"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
