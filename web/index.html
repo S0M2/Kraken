@@ -124,8 +124,16 @@
             <div class="glass-panel" style="height: 100%; display: flex; flex-direction: column;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h3><span style="color: var(--primary);">📜</span> Compromised Credentials DB</h3>
-                    <button id="btn-close-history" class="term-btn active"
-                        style="font-size: 0.9rem; padding: 8px 15px;">⬅ Back to Dashboard</button>
+                    <div>
+                        <button id="btn-export-csv" class="term-btn"
+                            style="color: #27c93f; border-color: #27c93f; margin-right: 10px; font-size: 0.9rem; padding: 8px 15px;">📥
+                            Export CSV</button>
+                        <button id="btn-clear-history" class="term-btn"
+                            style="color: #ff5f56; border-color: #ff5f56; margin-right: 15px; font-size: 0.9rem; padding: 8px 15px;">🗑️
+                            Clear DB</button>
+                        <button id="btn-close-history" class="term-btn active"
+                            style="font-size: 0.9rem; padding: 8px 15px;">⬅ Back to Dashboard</button>
+                    </div>
                 </div>
                 <div class="table-container" style="flex: 1; overflow-y: auto;">
                     <table class="results-table">

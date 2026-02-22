@@ -331,3 +331,58 @@ async function loadHistory() {
         console.error("Failed to fetch history:", error);
     }
 }
+
+document.getElementById('btn-export-csv').addEventListener('click', async () => {
+    try {
+        const response = await fetch('/api/results');
+        const data = await response.json();
+
+        if (data.length === 0) {
+            alert('No data to export.');
+            return;
+        }
+
+        const headers = ['Timestamp', 'Module', 'Target', 'Username', 'Password'];
+        const csvRows = [headers.join(',')];
+
+        data.forEach(row => {
+            const values = [
+                row.timestamp,
+                row.module,
+                row.target,
+                row.username,
+                row.password || ''
+            ];
+            // Escape quotes and wrap in quotes for CSV safety
+            csvRows.push(values.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','));
+        });
+
+        const csvContent = "data:text/csv;charset=utf-8," + csvRows.join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "kraken_compromised_credentials.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } catch (error) {
+        console.error("Export failed:", error);
+        alert('Failed to export CSV. See console for details.');
+    }
+});
+
+document.getElementById('btn-clear-history').addEventListener('click', async () => {
+    if (confirm("🚨 WARNING 🚨\nAre you sure you want to permanently delete ALL compromised credentials from the database? This action cannot be undone.")) {
+        try {
+            const response = await fetch('/api/results', { method: 'DELETE' });
+            if (response.ok) {
+                term.writeln(`\r\n\x1b[1;31m[*] Database cleared by user.\x1b[0m`);
+                loadHistory(); // Refresh the table
+            } else {
+                alert('Failed to clear database.');
+            }
+        } catch (error) {
+            console.error("Clear DB failed:", error);
+        }
+    }
+});

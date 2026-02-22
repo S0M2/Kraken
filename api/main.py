@@ -158,6 +158,12 @@ def delete_result(result_id: int, db: Session = Depends(get_db)):
         return {"status": "deleted"}
     return {"error": "not found"}
 
+@app.delete("/api/results")
+def clear_results(db: Session = Depends(get_db)):
+    db.query(Result).delete()
+    db.commit()
+    return {"status": "cleared"}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
