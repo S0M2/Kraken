@@ -36,7 +36,7 @@ def mocked_input(prompt=""):
         val = config.get('users', '')
     elif 'username' in prompt_lower or 'single username' in prompt_lower:
         val = config.get('username', '')
-    elif 'url' in prompt_lower or 'target' in prompt_lower or 'site' in prompt_lower or 'ip address' in prompt_lower or 'host' in prompt_lower or 'server' in prompt_lower or 'domain' in prompt_lower or 'admin path' in prompt_lower:
+    elif 'url' in prompt_lower or 'target' in prompt_lower or 'site' in prompt_lower or 'ip address' in prompt_lower or 'host' in prompt_lower or 'server' in prompt_lower or 'domain' in prompt_lower or 'admin path' in prompt_lower or 'ldap server address' in prompt_lower or 'voip server ip address' in prompt_lower:
         val = config.get('target', '')
     elif 'command' in prompt_lower:
         val = ""
