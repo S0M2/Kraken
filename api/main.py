@@ -35,11 +35,24 @@ async def websocket_run(websocket: WebSocket):
             await websocket.send_bytes(b"Error: No module specified.\r\n")
             return
 
-        cmd = [venv_python, kraken_py, module]
-        for k, v in config.get("args", {}).items():
-            if v is not None and str(v).strip() != "":
-                cmd.append(f"--{k}")
-                cmd.append(str(v))
+        modern_modules = ["ssh", "ftp", "wordpress", "wifi"]
+        if module in modern_modules:
+            cmd = [venv_python, kraken_py, module]
+            for k, v in config.get("args", {}).items():
+                if v is not None and str(v).strip() != "":
+                    cmd.append(f"--{k}")
+                    cmd.append(str(v))
+        else:
+            # Legacy routing
+            wrapper_path = os.path.join(script_dir, "legacy_wrapper.py")
+            target_script = os.path.join(script_dir, "..", "files", f"{module}.py")
+            
+            # Subdomain/Directory use _finder instead of _bruteforce, 
+            # so we'll pass the exact script name from the frontend
+            exact_script = config.get("script", f"{module}_bruteforce.py")
+            target_script = os.path.join(script_dir, "..", "files", exact_script)
+            
+            cmd = [venv_python, wrapper_path, target_script, json.dumps(config.get("args", {}))]
         
         master, slave = pty.openpty()
         env = os.environ.copy()

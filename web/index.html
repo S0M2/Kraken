@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,8 +8,11 @@
     <link href="/static/css/style.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/xterm.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/xterm.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
 </head>
+
 <body>
     <div class="sidebar">
         <div class="logo-container">
@@ -16,24 +20,13 @@
             <p class="subtitle">Modular Brute-Force Framework</p>
         </div>
         <ul class="menu" id="module-menu">
-            <li class="active" data-module="ssh">
-                <span class="icon">💻</span>
-                SSH Brute Force
-            </li>
-            <li data-module="ftp">
-                <span class="icon">📂</span>
-                FTP Brute Force
-            </li>
-            <li data-module="wordpress">
-                <span class="icon">🌐</span>
-                WordPress Brute
-            </li>
+            <!-- Populated dynamically by app.js -->
         </ul>
         <div class="sidebar-footer">
             <p>v2.0 (MODULAR) <br> Coded by Jason13 & Simon</p>
         </div>
     </div>
-    
+
     <div class="main-content">
         <div class="top-nav">
             <h2 id="module-title">SSH Brute Force</h2>
@@ -42,16 +35,17 @@
                 <span id="system-status">System Ready</span>
             </div>
         </div>
-        
+
         <div class="dashboard">
             <div class="glass-panel config-panel">
                 <h3>Attack Configuration</h3>
                 <form id="attack-form">
                     <div class="form-group">
                         <label>Target IP / Hostname <span>*</span></label>
-                        <input type="text" id="target" name="target" placeholder="192.168.1.1 or example.com" required autocomplete="off">
+                        <input type="text" id="target" name="target" placeholder="192.168.1.1 or example.com" required
+                            autocomplete="off">
                     </div>
-                    
+
                     <div class="form-row">
                         <div class="form-group">
                             <label>Port</label>
@@ -70,7 +64,8 @@
 
                     <div class="form-group">
                         <label>Password List <span>*</span></label>
-                        <input type="text" id="passwords" name="passwords" placeholder="../wordlists/passwords.txt" required>
+                        <input type="text" id="passwords" name="passwords" placeholder="../wordlists/passwords.txt"
+                            required>
                     </div>
 
                     <div class="action-bar">
@@ -85,7 +80,7 @@
                     </div>
                 </form>
             </div>
-            
+
             <div class="glass-panel terminal-panel">
                 <div class="terminal-ribbon">
                     <div class="window-controls">
@@ -99,7 +94,8 @@
             </div>
         </div>
     </div>
-    
+
     <script src="/static/js/app.js"></script>
 </body>
+
 </html>
