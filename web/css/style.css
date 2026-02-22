@@ -482,3 +482,64 @@ input::placeholder {
     border: 1px solid var(--primary) !important;
     background: rgba(0, 240, 255, 0.3) !important;
 }
+
+/* History Panel & Table Styles */
+.history-panel {
+    height: calc(100% - 70px);
+    width: 100%;
+}
+
+.results-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    text-align: left;
+}
+
+.results-table th,
+.results-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.results-table th {
+    background: rgba(0, 240, 255, 0.05);
+    color: var(--primary);
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.8rem;
+    position: sticky;
+    top: 0;
+}
+
+.results-table tr {
+    transition: background 0.2s;
+}
+
+.results-table tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.results-table td {
+    color: var(--text-main);
+}
+
+.results-table td:first-child {
+    color: var(--text-muted);
+}
+
+.table-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 10px;
+}

@@ -23,6 +23,10 @@
             <!-- Populated dynamically by app.js -->
         </ul>
         <div class="sidebar-footer">
+            <button id="btn-history" class="btn-glow launch-btn"
+                style="margin-bottom: 15px; padding: 10px; font-size: 0.8rem;">
+                <span class="btn-text">📜 View Results History</span>
+            </button>
             <p>v2.0 (MODULAR) <br> Coded by Jason13 & Simon</p>
         </div>
     </div>
@@ -114,6 +118,34 @@
                 <div id="terminal-container"></div>
             </div>
         </div>
+
+        <!-- History Panel (Hidden by default) -->
+        <div class="history-panel" id="history-panel" style="display: none;">
+            <div class="glass-panel" style="height: 100%; display: flex; flex-direction: column;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3><span style="color: var(--primary);">📜</span> Compromised Credentials DB</h3>
+                    <button id="btn-close-history" class="term-btn active"
+                        style="font-size: 0.9rem; padding: 8px 15px;">⬅ Back to Dashboard</button>
+                </div>
+                <div class="table-container" style="flex: 1; overflow-y: auto;">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Module</th>
+                                <th>Target</th>
+                                <th>Username</th>
+                                <th>Password</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-tbody">
+                            <!-- Populated via API -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script src="/static/js/app.js"></script>

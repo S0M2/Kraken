@@ -46,6 +46,49 @@ def mocked_input(prompt=""):
     print(val) # Echo to the PTY
     return val
 
+import urllib.request
+
+original_open = builtins.open
+
+class DBWriter:
+    def __init__(self, fd, module_name, target):
+        self.fd = fd
+        self.module_name = module_name
+        self.target = target
+
+    def write(self, s):
+        self.fd.write(s)
+        if s.strip():
+            try:
+                data = json.dumps({
+                    "module": self.module_name,
+                    "target": self.target,
+                    "username": s.strip(),
+                    "password": ""
+                }).encode('utf-8')
+                req = urllib.request.Request("http://127.0.0.1:8000/api/results", data=data, headers={"Content-Type": "application/json"})
+                urllib.request.urlopen(req, timeout=2)
+            except Exception:
+                pass
+                
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.fd.close()
+
+    def __getattr__(self, attr):
+        return getattr(self.fd, attr)
+
+def mocked_open(file, mode='r', *args, **kwargs):
+    fd = original_open(file, mode, *args, **kwargs)
+    if ('w' in mode or 'a' in mode) and 'Results' in str(file):
+        module_name = os.path.basename(script_path).replace(".py", "").replace("_bruteforce", "").replace("_finder", "").upper()
+        target = config.get('target', 'Unknown Target')
+        return DBWriter(fd, module_name, target)
+    return fd
+
+builtins.open = mocked_open
 builtins.input = mocked_input
 
 sys.argv = [script_path]

@@ -235,3 +235,64 @@ function startAttack(config) {
         document.getElementById('stat-speed').innerText = '0 /s';
     };
 }
+
+// --- History Panel Logic ---
+const btnHistory = document.getElementById('btn-history');
+const btnCloseHistory = document.getElementById('btn-close-history');
+const historyPanel = document.getElementById('history-panel');
+const dashboardViews = document.querySelectorAll('.dashboard, .stats-panel, .top-nav');
+
+btnHistory.addEventListener('click', () => {
+    dashboardViews.forEach(el => el.style.display = 'none');
+    historyPanel.style.display = 'block';
+    loadHistory();
+});
+
+btnCloseHistory.addEventListener('click', () => {
+    historyPanel.style.display = 'none';
+    document.querySelector('.top-nav').style.display = 'flex';
+    document.querySelector('.dashboard').style.display = 'grid';
+    // Hide stats panel unless an attack is currently running
+    if (!ws) {
+        document.getElementById('stats-panel').style.display = 'none';
+        document.querySelector('.dashboard').style.height = '100%';
+    } else {
+        document.getElementById('stats-panel').style.display = 'flex';
+    }
+});
+
+async function loadHistory() {
+    const tbody = document.getElementById('results-tbody');
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Loading data...</td></tr>';
+
+    try {
+        const response = await fetch('/api/results');
+        const data = await response.json();
+
+        if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No compromised credentials found yet.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = '';
+        data.forEach(row => {
+            const tr = document.createElement('tr');
+
+            // Format date nicely
+            const dateObj = new Date(row.timestamp);
+            const dateStr = dateObj.toLocaleString();
+
+            tr.innerHTML = `
+                <td>${dateStr}</td>
+                <td><span style="color: var(--primary); font-weight: bold;">${row.module}</span></td>
+                <td>${row.target}</td>
+                <td style="color: #27c93f;">${row.username}</td>
+                <td style="color: var(--magenta); font-weight: bold;">${row.password || 'N/A'}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (error) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #ff5f56;">Error loading database results.</td></tr>';
+        console.error("Failed to fetch history:", error);
+    }
+}

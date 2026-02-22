@@ -3,23 +3,33 @@ import os
 import asyncio
 import json
 import pty
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from contextlib import asynccontextmanager
 
-app = FastAPI(title="KRAKEN Dashboard")
+from .database import init_db, get_db, Result
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 web_dir = os.path.join(script_dir, "..", "web")
 kraken_py = os.path.join(script_dir, "..", "kraken.py")
 venv_python = os.path.join(script_dir, "..", "venv", "bin", "python")
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+app = FastAPI(title="KRAKEN Dashboard", lifespan=lifespan)
+
 os.makedirs(web_dir, exist_ok=True)
 app.mount("/static", StaticFiles(directory=web_dir), name="static")
 
 @app.get("/")
 async def root():
-    return FileResponse(os.path.join(web_dir, "index.html"))
+    return HTMLResponse(open(os.path.join(web_dir, "index.html")).read())
 
 @app.websocket("/api/ws/run")
 async def websocket_run(websocket: WebSocket):
@@ -117,3 +127,37 @@ async def websocket_run(websocket: WebSocket):
                 os.close(master)
             except:
                 pass
+
+# --- Database Endpoints ---
+
+class ResultCreate(BaseModel):
+    module: str
+    target: str
+    username: str
+    password: str
+
+@app.post("/api/results")
+def create_result(result: ResultCreate, db: Session = Depends(get_db)):
+    db_res = Result(**result.model_dump())
+    db.add(db_res)
+    db.commit()
+    db.refresh(db_res)
+    return db_res
+
+@app.get("/api/results")
+def read_results(db: Session = Depends(get_db)):
+    results = db.query(Result).order_by(Result.timestamp.desc()).all()
+    return results
+
+@app.delete("/api/results/{result_id}")
+def delete_result(result_id: int, db: Session = Depends(get_db)):
+    res = db.query(Result).filter(Result.id == result_id).first()
+    if res:
+        db.delete(res)
+        db.commit()
+        return {"status": "deleted"}
+    return {"error": "not found"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

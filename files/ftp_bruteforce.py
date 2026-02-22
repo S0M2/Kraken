@@ -45,6 +45,13 @@ class FTPBruteForce(KrakenModule):
                 with open(self.result_file_path, "a") as result_file:
                     result_file.write(f"{ip} -> {success_msg}\n")
                 
+                try:
+                    sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+                    from api.save_hit import save_to_db
+                    save_to_db("FTP", ip, username, password)
+                except Exception as e:
+                    logger.debug(f"DB Save ignored: {e}")
+                
                 return success_msg
         except Exception as e:
             logger.debug(f"Login failed for {username}:{password} @ {ip}: {e}")

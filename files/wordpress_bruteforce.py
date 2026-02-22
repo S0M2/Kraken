@@ -92,6 +92,14 @@ class WordPressBruteForce(KrakenModule):
                 
                 with open(self.result_file_path, 'a') as writer:
                     writer.write(f"{site}/wp-login.php -> {success_msg}\n")
+                
+                try:
+                    sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+                    from api.save_hit import save_to_db
+                    save_to_db("WordPress", site, username, password)
+                except Exception as e:
+                    logger.debug(f"DB Save ignored: {e}")
+                    
                 return True
             return False
         except Exception as e:
