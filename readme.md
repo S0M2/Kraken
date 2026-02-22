@@ -1,4 +1,3 @@
-
 <h1 align="center">
   <a href="">
     <picture>
@@ -9,37 +8,28 @@
   <br>
 </h1>
 <p align="center">
-   A Python-based tool to centralize and streamline BruteForce Attacks
+   A Python-based modular framework to centralize and streamline BruteForce Attacks
 </p>
 
 ![screenshot](https://i.imgur.com/aYTy4Ll.gif)
 
 ---
 
-## About The Project
-<b>Kraken</b> is a powerful, Python-based tool designed to centralize and streamline various brute-forcing tasks. Kraken provides a suite of tools for cybersecurity professionals to efficiently perform brute-force attacks across a range of protocols and services.
+## 🚀 What's New in v2.0 (MODULAR)
 
-## ⚠️  WARNING: LEGAL DISCLAIMER
+Kraken has been fundamentally rebuilt from the ground up to introduce a modern Object-Oriented Architecture, real-time web capabilities, and an integrated database system:
 
-This tool is intended for educational purposes only. The author is not responsible for any illegal use of this tool. Users aresolely responsible 
-for their actions.
+- **🕸 KRAKEN Web Dashboard**: A stunning, responsive Web UI with dark-mode glassmorphism. Control all 21 tools directly from your browser with real-time WebSocket terminal streaming and a live Global Progress Bar.
+- **🗄️ Integrated SQLite Database**: No more messy `.txt` files in a Results folder. Every compromised credential is automatically saved into a centralized SQLite database. View, filter, clear, or export your findings to CSV directly from the Web Dashboard's "Results History" tab.
+- **⚡️ Modern OOP Architecture & Click CLI**: The codebase has been refactored into a modular Object-Oriented structure. You can now use Kraken interactively, or script it directly from the command line using `click` (e.g., `python kraken.py ssh --target 127.0.0.1 --users users.txt --passwords pass.txt`).
+- **📊 Rich Progress Bars**: Gone are the old manual percentage texts. Modules now utilize the professional `rich` library to display smooth loading bars, Estimated Time of Arrival (ETA), and valid hit counters.
 
 ---
 
-## 👀 Screenshots
+## ⚠️  WARNING: LEGAL DISCLAIMER
 
-<p float="left" align="middle">
-  <img src="https://i.imgur.com/wcgBbDU.png" width="49%" height="px">
-  <img src="https://i.imgur.com/Xa0KzvD.png" width="49%">
-</p>
-<p float="left" align="middle">
-  <img src="https://i.imgur.com/OvxKG1B.png" width="49%">
-  <img src="https://i.imgur.com/W1vEUrj.png" width="49%">
-</p>
-<p float="left" align="middle">
-  <img src="https://i.imgur.com/HoKXOBQ.png" width="49%">
-  <img src="https://i.imgur.com/Un0IgfB.png" width="49%">
-</p>
+This tool is intended for educational purposes only. The author is not responsible for any illegal use of this tool. Users are solely responsible 
+for their actions.
 
 ---
 
@@ -48,22 +38,51 @@ for their actions.
 To install Kraken, follow these steps:
 
 ```bash
-git clone https://github.com/jasonxtn/kraken.git
+git clone https://github.com/S0M2/Kraken.git
 cd Kraken
+# It is highly recommended to use a virtual environment
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
-```
-
-To launch Kraken:
-
-```bash
-python kraken.py
 ```
 
 ---
 
-## 📖 Usage
+## 📖 Usage Modes
 
-Kraken offers a variety of tools for brute-forcing:
+Kraken now offers three distinct ways to operate, catering to beginners and advanced professionals alike:
+
+### 1. The Web Dashboard (Recommended)
+
+Experience the beautiful, real-time graphical interface:
+```bash
+# Start the FastAPI backend server
+uvicorn api.main:app --host 0.0.0.0 --port 8000
+```
+Then, open your web browser and navigate to **http://localhost:8000**. Select your target module, input your wordlists, and hit "Launch Attack". Watch the terminal stream live via WebSockets.
+
+### 2. Interactive CLI Menu
+
+The classic, user-friendly menu interface:
+```bash
+python kraken.py
+```
+This will display the familiar `root@kraken:~#` prompt and a table of the 21 available tools. Simply type the number corresponding to the tool you want to use.
+
+### 3. Advanced Scripting CLI
+
+Automation and direct execution using the robust `click` interface:
+```bash
+# Run the SSH module directly with arguments
+python kraken.py ssh --target 192.168.1.1 --port 22 --username admin --passwords wordlists/passwords.txt --threads 20
+
+# Get help for specific modules
+python kraken.py ftp --help
+```
+
+---
+
+## 🧰 Available Tools
 
 1. **Network Tools:**
    - FTP Brute Force
@@ -85,24 +104,11 @@ Kraken offers a variety of tools for brute-forcing:
    - OpenCart Brute Force
    - WooCommerce Brute Force
    - WordPress Brute Force
+
 3. **Finder Tools:**
    - Admin Panel Finder
    - Directory Finder
    - Subdomain Finder
-
-### To use a specific tool:
-
-1. Launch Kraken from the command line.
-2. Select the desired tool from the main menu by typing its corresponding number.
-3. Follow the on-screen prompts to input the required information.
-4. Review the results provided by the tool.
-
-### Example:
-
-```bash
-root@kraken:~# 1
-```
-This command would start the FTP Brute Force tool.
 
 ---
 
