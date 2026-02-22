@@ -109,38 +109,67 @@ function setStatus(status, isRunning) {
     }
 }
 
-form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    if (ws && ws.readyState === WebSocket.OPEN) return;
+const attackForm = document.getElementById('attack-form');
 
-    term.clear();
-    const target = document.getElementById('target').value;
-    const port = document.getElementById('port').value;
-    const threads = document.getElementById('threads').value;
-    const users = document.getElementById('users').value;
-    const passwords = document.getElementById('passwords').value;
+attackForm.addEventListener('submit', (e) => {
+    e.preventDefault(); // <-- CRITICAL FIX: Prevent page reload
 
-    const modConfig = modulesConfig[currentModule];
-    const scriptName = modConfig.script || `${currentModule}_bruteforce.py`;
+    if (ws) return;
 
     const config = {
         module: currentModule,
-        script: scriptName,
-        args: {
-            target: target,
-            port: port || null,
-            threads: threads,
-            passwords: passwords
-        }
+        args: {}
     };
 
-    if (users) {
-        if (users.includes('.txt') || users.includes('/')) {
-            config.args.users = users;
-            config.args.is_list = true;
-        } else {
-            config.args.username = users;
-            config.args.is_list = false;
+    const target = document.getElementById('target').value;
+    if (target) config.args.target = target;
+
+    // Modern tools mapping
+    if (['ssh', 'ftp', 'wordpress', 'wifi'].includes(currentModule)) {
+        if (document.getElementById('port') && document.getElementById('port').parentElement.style.display !== 'none') {
+            config.args.port = document.getElementById('port').value || null;
+        }
+        if (document.getElementById('users') && document.getElementById('users').parentElement.style.display !== 'none') {
+            const userVal = document.getElementById('users').value;
+            // Naive approach: if ends with .txt treat as file, else treat as single user
+            if (userVal.toLowerCase().endsWith('.txt')) {
+                config.args.users_file = userVal;
+            } else if (userVal) {
+                config.args.username = userVal;
+            }
+        }
+        if (document.getElementById('passwords')) config.args.passwords_file = document.getElementById('passwords').value;
+        if (document.getElementById('threads')) config.args.threads = document.getElementById('threads').value;
+
+        if (currentModule === 'ssh' && document.getElementById('cmd')) {
+            config.args.cmd = document.getElementById('cmd').value;
+        }
+        if (currentModule === 'wordpress' && document.getElementById('wp-submit')) {
+            config.args.wp_submit_value = document.getElementById('wp-submit').value || 'Log In';
+            config.args.wp_redirect_to = document.getElementById('wp-redirect') ? document.getElementById('wp-redirect').value : '';
+        }
+    } else {
+        // Legacy Tools mapping
+        const portVal = document.getElementById('port') ? document.getElementById('port').value : '';
+        const threadVal = document.getElementById('threads') ? document.getElementById('threads').value : '';
+        const userVal = document.getElementById('users') ? document.getElementById('users').value : '';
+        const passVal = document.getElementById('passwords') ? document.getElementById('passwords').value : '';
+
+        // If finder tool, no port or threads usually needed by legacy wrapper, but pass them anyway.
+        // The wrapper will ignore what it doesn't need.
+        config.args = {
+            target: target,
+            port: portVal,
+            threads: threadVal,
+            users: userVal,
+            username: userVal,
+            passwords: passVal
+        };
+
+        // Let main.py know exactly which file to execute
+        config.script = `${currentModule}_bruteforce.py`;
+        if (currentModule.includes('finder') || currentModule === 'directory' || currentModule === 'subdomain') {
+            config.script = `${currentModule}_finder.py`;
         }
     }
 
