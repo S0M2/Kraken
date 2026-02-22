@@ -4,7 +4,11 @@ import time
 import click
 import logging
 from scapy.all import Dot11, RadioTap, sendp
-from pywifi import PyWiFi, const, Profile
+try:
+    from pywifi import PyWiFi, const, Profile
+    PYWIFI_AVAILABLE = True
+except NotImplementedError:
+    PYWIFI_AVAILABLE = False
 from random import choice
 
 
@@ -107,6 +111,11 @@ def deauth():
 @cli.command()
 def bruteforce():
     """Performs a dictionary attack on the target WiFi network."""
+    if not PYWIFI_AVAILABLE:
+        click.echo(Fore.RED + "This feature (pywifi) is not supported on this operating system (e.g. macOS).")
+        logging.error("PyWiFi not supported on this OS.")
+        return
+        
     target_ssid = prompt_user_input("Enter target SSID: ")
     wordlist = prompt_user_input("Enter path to the wordlist file (or press Enter to use default 'wordlists/wifi_wordlists.txt'): ") or os.path.join(script_dir, "..", "wordlists", "wifi_wordlists.txt")
     

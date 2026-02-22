@@ -32,7 +32,7 @@ def display_logo():
         ▀           ███    ███                ▀                                
                                                                                                     
                     NOTE! : I'M NOT RESPONSIBLE FOR ANY ILLEGAL USAGE.
-                    CODED BY : JASON13
+                    CODED BY : JASON13 & SIMON
                     VERSION : 2.0 (MODULAR)
     """
     for line in x.split("\n"):
