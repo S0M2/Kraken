@@ -36,6 +36,22 @@
             </div>
         </div>
 
+        <!-- Live Statistics Panel -->
+        <div class="stats-panel" id="stats-panel" style="display: none;">
+            <div class="stat-card">
+                <div class="stat-value" id="stat-tested">0</div>
+                <div class="stat-label">Total Tested</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value text-magenta" id="stat-speed">0 /s</div>
+                <div class="stat-label">Current Speed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value text-success" id="stat-hits">0</div>
+                <div class="stat-label">Valid Hits</div>
+            </div>
+        </div>
+
         <div class="dashboard">
             <div class="glass-panel config-panel">
                 <h3>Attack Configuration</h3>
@@ -89,6 +105,11 @@
                         <span class="dot expand"></span>
                     </div>
                     <div class="terminal-title">kraken-live-feed ~ <span>/bin/bash</span></div>
+                    <div class="terminal-actions">
+                        <button type="button" id="btn-autoscroll" class="term-btn active" title="Toggle Auto-Scroll">↓
+                            Auto-Scroll</button>
+                        <button type="button" id="btn-clear" class="term-btn" title="Clear Terminal">⎚ Clear</button>
+                    </div>
                 </div>
                 <div id="terminal-container"></div>
             </div>

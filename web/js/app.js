@@ -157,11 +157,45 @@ stopBtn.addEventListener('click', () => {
     }
 });
 
+let autoScroll = true;
+let totalAttempts = 0;
+let validHits = 0;
+let lastAttemptsCount = 0;
+
+document.getElementById('btn-autoscroll').addEventListener('click', function () {
+    autoScroll = !autoScroll;
+    this.classList.toggle('active', autoScroll);
+    this.innerText = autoScroll ? '↓ Auto-Scroll' : '⏸ Auto-Scroll (Paused)';
+});
+
+document.getElementById('btn-clear').addEventListener('click', () => {
+    term.clear();
+});
+
+setInterval(() => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        const speed = totalAttempts - lastAttemptsCount;
+        document.getElementById('stat-speed').innerText = `${speed > 0 ? speed : 0} /s`;
+        lastAttemptsCount = totalAttempts;
+    }
+}, 1000);
+
 function startAttack(config) {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/api/ws/run`;
 
     setStatus('Attacking...', true);
+    document.getElementById('stats-panel').style.display = 'flex';
+    document.querySelector('.dashboard').style.height = 'calc(100% - 150px)';
+
+    // Reset Stats
+    totalAttempts = 0;
+    validHits = 0;
+    lastAttemptsCount = 0;
+    document.getElementById('stat-tested').innerText = '0';
+    document.getElementById('stat-hits').innerText = '0';
+    document.getElementById('stat-speed').innerText = '0 /s';
+
     ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
@@ -169,21 +203,35 @@ function startAttack(config) {
     };
 
     ws.onmessage = async (event) => {
-        if (event.data instanceof Blob) {
-            const text = await event.data.text();
-            term.write(text);
-        } else {
-            term.write(event.data);
+        let text = event.data instanceof Blob ? await event.data.text() : event.data;
+        term.write(text);
+        if (autoScroll) {
+            term.scrollToBottom();
+        }
+
+        const lowerText = text.toLowerCase();
+        if (lowerText.includes('success') || lowerText.includes('found')) {
+            validHits++;
+            document.getElementById('stat-hits').innerText = validHits;
+        }
+
+        // Rough heuristic for attempt counting: carriage returns or newlines
+        const lines = text.split(/\r|\n/);
+        if (lines.length > 1) {
+            totalAttempts += (lines.length - 1);
+            document.getElementById('stat-tested').innerText = totalAttempts;
         }
     };
 
     ws.onclose = () => {
         setStatus('System Ready', false);
         ws = null;
+        document.getElementById('stat-speed').innerText = '0 /s';
     };
 
     ws.onerror = () => {
         term.writeln(`\r\n\x1b[1;31m[-] API Connection Error.\x1b[0m`);
         setStatus('System Ready', false);
+        document.getElementById('stat-speed').innerText = '0 /s';
     };
 }
