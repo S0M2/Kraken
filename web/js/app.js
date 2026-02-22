@@ -94,6 +94,12 @@ Object.entries(modulesConfig).forEach(([key, config]) => {
     moduleMenu.appendChild(li);
 });
 
+let ws = null;
+const statusText = document.getElementById('system-status');
+const statusPulse = document.querySelector('.pulse');
+const startBtn = document.getElementById('start-btn');
+const stopBtn = document.getElementById('stop-btn');
+
 function setStatus(status, isRunning) {
     statusText.innerText = status;
     if (isRunning) {
@@ -133,12 +139,12 @@ attackForm.addEventListener('submit', (e) => {
             const userVal = document.getElementById('users').value;
             // Naive approach: if ends with .txt treat as file, else treat as single user
             if (userVal.toLowerCase().endsWith('.txt')) {
-                config.args.users_file = userVal;
+                config.args.users = userVal;
             } else if (userVal) {
                 config.args.username = userVal;
             }
         }
-        if (document.getElementById('passwords')) config.args.passwords_file = document.getElementById('passwords').value;
+        if (document.getElementById('passwords')) config.args.passwords = document.getElementById('passwords').value;
         if (document.getElementById('threads')) config.args.threads = document.getElementById('threads').value;
 
         if (currentModule === 'ssh' && document.getElementById('cmd')) {

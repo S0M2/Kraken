@@ -37,7 +37,7 @@ share/python-wheels/
 
 # MacOS
 .DS_Store
-
+*.db
 # IDEs
 .idea/
 .vscode/
